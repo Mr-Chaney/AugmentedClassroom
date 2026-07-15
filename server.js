@@ -280,7 +280,7 @@ const masterUnitContent = {
 const students = {
     "John.Doe6974@GCPSK12.org":{
         name: "John Doe",
-        username: ,
+        username: "John Doe",
         earnedPoints: 0,
         possiblePoints: 0,
         classPercentage: 0,
