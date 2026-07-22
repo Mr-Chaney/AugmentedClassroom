@@ -1,3 +1,4 @@
+<!--pre><%= JSON.stringify(locals, null, 2) %></pre-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,7 +15,7 @@
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold text-white">Chemistry Class</h1>
             <div class="bg-slate-100 px-4 py-1.5 rounded-full text-sm font-medium">
-                <span class="text-indigo-600 font-semibold"><%= username %></span>
+                <span class="text-indigo-600 font-semibold"><%= user.name %></span>
             </div>
         </div>
     </nav>
@@ -23,45 +24,161 @@
     <main class="max-w-6xl mx-auto p-6 mt-6">
         
         <!-- Welcome Banner -->
-        <header class="bg-white rounded-2xl p-6 text-black shadow-md mb-8">
-            <h2 class="text-2xl font-bold mb-2">Hello, <%= username %>!</h2>
+        <header class="bg-white rounded-3xl p-6 text-black shadow-md mb-8">
+            <h2 class="text-2xl font-bold mb-2">Hello <%= user.name %>!</h2>
             <p class="text-slate-500">Here's your current class progress.</p>
         </header>
 
-        <!-- Quick Actions / Cards Grid -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- views/index.ejs -->
+
+        <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; padding: 20px;">
+        <% if (typeof masterUnitContent !== 'undefined' && Object.keys(masterUnitContent).length > 0) { %>
             
-            <!-- Card 1: Quizzes -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition duration-200">
-                <div class="text-3xl mb-3">📝</div>
-                <h3 class="text-lg font-bold text-slate-900 mb-1">Assignments & Quizzes</h3>
-                <p class="text-slate-500 text-sm mb-4">View active tests, practice quizzes, and check your latest scores.</p>
-                <a href="/quizzes" class="inline-block bg-indigo-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-                    Open Quizzes
+            <% Object.entries(masterUnitContent).forEach(([unitId, unit]) => { %>
+            <% const studentUnit = (user && user.units) ? user.units[unitId] : null; 
+            // Dynamic lookup using the loop's unitId key
+            const gradebookConfig = classroomPointSetup.Gradebook[unitId];
+            const progressValue = gradebookConfig ? gradebookConfig.progress : 0;
+        
+            const unitGoal = classroomPointSetup.pointValues.unitPointPerGradebookPoint * progressValue;
+            const goalLapped = Math.floor(studentUnit.progress.total/unitGoal);
+            const goalRemainder = (studentUnit.progress.total % unitGoal) / unitGoal * 100
+            %>
+
+            <div class="unit-card" style="border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s; max-width: 450px;">
+                
+                <div class="card-header">
+                    <h2 style="margin: 8px 0 16px 0; font-size: 1.35rem; color: #1a202c; font-weight: 700;"><%= unit.title %></h2>
+                </div>
+
+                <!-- Progress Metrics Panel >
+                <div class="progress-panel" style="background-color: #f7fafc; border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid #edf2f7;">
+                <h4 style="margin: 0 0 12px 0; font-size: 0.9rem; color: #4a5568; font-weight: 600;">Unit Performance</h4-->
+                
+                <!-- 1. Progress Total -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; color: #4a5568;">
+                        <span style="font-weight: bold;">Progress</span>
+                        <span style="font-weight: bold;"> <%= studentUnit.progress.total %> / <%= unitGoal %> (<%= studentUnit.progress.display %>%) </span>
+                    </div>
+                    
+                    <% 
+                        // Color mapping dictionaries based on times goal has been achieved
+                        const leftColors = {
+                            0: '#009E73', // Green
+                            1: '#E69F00', // Gold
+                            2: '#0072B2', // Blue
+                            3: '#D55E00', // Orange
+                            4: '#CC79A7'  // Maroon
+                        };
+
+                        const rightColors = {
+                            0: '#bcbfc4', // Gray
+                            1: '#009E73', // Green
+                            2: '#E69F00', // Gold
+                            3: '#0072B2', // Blue
+                            4: '#D55E00'  // Orange
+                        };
+
+                        // Fallback to Maroon if goalLapped exceeds 4 laps
+                        const leftBarColor = leftColors[goalLapped] || '#CC79A7';
+                        const rightBarColor = rightColors[goalLapped] || '#CC79A7';
+                    %>
+                    <div style="background-color: <%= rightBarColor %>; border-radius: 10px; width: 100%; height: 8px; overflow: hidden;">
+                        <div style="width: <%= goalRemainder %>%; background-color: <%= leftBarColor %>; height: 100%; border-radius: 10px; transition: width 0.4s ease;"></div>
+                    </div>
+
+                    <!--div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; color: #4a5568;">
+                        <span style="font-weight: bold;"> </span>
+                        <span style="font-weight: bold;"> <%= studentUnit.progress.points %> / <%= gradebookConfig.progress %> Points </span>
+                    </div-->
+                </div>
+
+                <!-- 2. Lab Display -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; color: #4a5568;">
+                        <span style="font-weight: bold;">Lab</span>
+                        <span style="font-weight: bold;"> <%= studentUnit.lab.raw %> (raw score) + <%= studentUnit.lab.bonus %> (bonus) =  <%= studentUnit.lab.display %>% </span>
+                    </div>
+                    
+                    <div style="display: flex; background-color: #bcbfc4; border-radius: 10px; width: 100%; height: 8px; overflow: hidden;">
+                        <!-- Green Segment: Raw Lab Score -->
+                        <div style="width: <%= studentUnit.lab.raw %>%; background-color: #009E73; height: 100%; transition: width 0.4s ease;"></div>
+                        
+                        <!-- Gold Segment: Bonus Points -->
+                        <div style="width: <%= studentUnit.lab.bonus %>%; background-color: #E69F00; height: 100%; transition: width 0.4s ease;"></div>
+                        
+                        <!-- Gray Segment: The remaining portion up to 100% -->
+                        <div style="width: <%= 100 - studentUnit.lab.raw - studentUnit.lab.bonus %>%; background-color: #bcbfc4; height: 100%; transition: width 0.4s ease;"></div>
+                    </div>
+
+                    <!--div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; color: #4a5568;">
+                        <span style="font-weight: bold;"> </span>
+                        <span style="font-weight: bold;"> <%= studentUnit.lab.points %> / <%= gradebookConfig.lab %> Points </span>
+                    </div-->
+                </div>
+
+                <!-- 3. Test Display -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; color: #4a5568;">
+                        <span style="font-weight: bold;">Test</span>
+                        <span style="font-weight: bold;"> <%= studentUnit.test.raw %> (raw score) + <%= studentUnit.test.bonus %> (bonus) =  <%= studentUnit.test.display %>% </span>
+                    </div>
+                    <!-- Container turned into a Flexbox row -->
+                    <div style="display: flex; background-color: #bcbfc4; border-radius: 10px; width: 100%; height: 8px; overflow: hidden;">
+                        <!-- Green Segment: Raw Test Score -->
+                        <div style="width: <%= studentUnit.test.raw %>%; background-color: #009E73; height: 100%; transition: width 0.4s ease;"></div>
+                        
+                        <!-- Gold Segment: Bonus Points -->
+                        <div style="width: <%= studentUnit.test.bonus %>%; background-color: #E69F00; height: 100%; transition: width 0.4s ease;"></div>
+                        
+                        <!-- Gray Segment: The remaining portion up to 100% -->
+                        <div style="width: <%= 100 - studentUnit.test.raw - studentUnit.test.bonus %>%; background-color: #bcbfc4; height: 100%; transition: width 0.4s ease;"></div>
+                    </div>
+
+                    <!--div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; color: #4a5568;">
+                        <span style="font-weight: bold;"> </span>
+                        <span style="font-weight: bold;"> <%= studentUnit.test.points %> / <%= gradebookConfig.test %> Points </span>
+                    </div-->
+                </div>
+
+
+
+                <!--div class="card-body" style="flex-grow: 1; margin-bottom: 20px;">
+                <p style="font-weight: 600; font-size: 0.85rem; margin-bottom: 8px; color: #4a5568;">
+                    Unit Quizzes (<%= unit.quizzes.length %>):
+                </p>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <% unit.quizzes.forEach((quiz, index) => { %>
+                    <li style="margin-bottom: 6px;">
+                        <a href="/quiz/<%= unitId %>/<%= index %>" style="display: flex; align-items: center; justify-content: space-between; text-decoration: none; padding: 6px 12px; border-radius: 8px; background-color: #f7fafc; color: #3182ce; border: 1px solid #e2e8f0; transition: all 0.2s ease; font-size: 0.85rem;">
+                        <span style="font-weight: 500;"><%= quiz.name %></span>
+                        <span style="font-size: 0.75rem; background: #ebf8ff; padding: 2px 8px; border-radius: 12px; font-weight: 600;">
+                            <%= quiz.questions.length %> Qs
+                        </span>
+                        </a>
+                    </li>
+                    <% }); %>
+                </ul>
+                </div-->
+
+                <div class="card-footer" style="border-top: 1px solid #edf2f7; padding-top: 16px;">
+                <a href="/<%= unitId %>" class="btn btn-primary" style="display: block; text-align: center; background-color: #3182ce; color: white; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background-color 0.2s;">
+                    Go To <%= unit.title.split(':')[0] %>
                 </a>
-            </div>
+                </div>
 
-            <!-- Card 2: Lessons -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition duration-200">
-                <div class="text-3xl mb-3">🧪</div>
-                <h3 class="text-lg font-bold text-slate-900 mb-1">Study Modules</h3>
-                <p class="text-slate-500 text-sm mb-4">Review class study guides, atomic theories, and chemistry resources.</p>
-                <button class="inline-block bg-slate-100 text-slate-600 text-sm font-semibold px-4 py-2 rounded-lg cursor-not-allowed" disabled>
-                    Coming Soon
-                </button>
             </div>
+            <% }); %>
 
-            <!-- Card 3: Performance -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition duration-200">
-                <div class="text-3xl mb-3">📊</div>
-                <h3 class="text-lg font-bold text-slate-900 mb-1">Gradebook</h3>
-                <p class="text-slate-500 text-sm mb-4">Track your points, view progress trends, and see teacher feedback.</p>
-                <button class="inline-block bg-slate-100 text-slate-600 text-sm font-semibold px-4 py-2 rounded-lg cursor-not-allowed" disabled>
-                    Coming Soon
-                </button>
+        <% } else { %>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #718096;">
+            <h3>No units found</h3>
+            <p>Please double-check your masterUnitContent configuration.</p>
             </div>
-
-        </section>
+        <% } %>
+        </div>
 
     </main>
 
