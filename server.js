@@ -1,17 +1,12 @@
 const express = require('express');
 const app = express();
+const path = require('path');
 
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Route for the homepage
-app.get('/', (req, res) => {
-    // We pass data (a username variable) straight to our webpage!
-    res.render('index', { username: 'Mr. Chaney' });
-});
-
-app.listen(3000, () => {
-    console.log('Server running on port ${Port}');
-});
 
 // =========================================================================
 // 1. Questions
@@ -273,7 +268,6 @@ const masterUnitContent = {
     }
 
 };
-
 // =========================================================================
 // 2. Student Data (One Example for Now)
 // =========================================================================
@@ -286,35 +280,49 @@ const students = {
         classPercentage: 0,
         units: {
             "unit-1": {
-                test: {raw: 0, bonus: 0, display: 0},
-                lab: {raw: 0, bonus: 0, display: 0},
-                progress: {total:0, display: 0},
+                test: 90,
+                lab: 82,
                 inClassPoints: 0,
                 inClassAssignments:{"Unit 1 Packet": 700, "Unit 1 Quiz": 1000, "Unit 1 Review": 1000},
                 quizPoints: 0,
                 quizScores: { 0: 250, 1: 250, 2: 500, 3: 20, 4: 0, 5: 0, 6: 0 },
                 cumulativeQuizScore: 0,
-                
+                totalUnitProgress: 0,
+                displayProgress: 0,
+                testBonus: 0,
+                labBonus: 0,
+                displayLab: 0,
+                displayTest: 0 
             },  
             "unit-2": {
-                test: {raw: 0, bonus: 0, display: 0},
-                lab: {raw: 0, bonus: 0, display: 0},
-                progress: {total:0, display: 0},
+                test: 70,
+                lab: 83,
                 inClassPoints: 0,
                 inClassAssignments:{"2.1 Paper": 6000},
                 quizPoints: 0,
                 quizScores: { 0: 0, 1: 0},
-                cumulativeQuizScore: 0
+                cumulativeQuizScore: 0,
+                totalUnitProgress: 0,
+                displayProgress: 0,
+                testBonus: 0,
+                labBonus: 0,
+                displayLab: 0,
+                displayTest: 0 
             },
             "unit-3": {
-                test: {raw: 0, bonus: 0, display: 0},
-                lab: {raw: 0, bonus: 0, display: 0},
-                progress: {total:0, display: 0},
+                test: 0,
+                lab: 0,
                 inClassPoints: 0,
                 inClassAssignments:{},
                 quizPoints: 0,
                 quizScores: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0},
-                cumulativeQuizScore: 0
+                cumulativeQuizScore: 0,
+                totalUnitProgress: 0,
+                displayProgress: 0,
+                testBonus: 0,
+                labBonus: 0,
+                displayLab: 0,
+                displayTest: 0 
             },
             "unit-4": {
                 test: {raw: 0, bonus: 0, display: 0},
@@ -327,28 +335,263 @@ const students = {
                 cumulativeQuizScore: 0
             },
             "unit-5": {
-                test: {raw: 0, bonus: 0, display: 0},
-                lab: {raw: 0, bonus: 0, display: 0},
-                progress: {total:0, display: 0},
+                testOriginal: 0,
+                labOriginal: 0,
                 inClassPoints: 0,
                 inClassAssignments:{},
                 quizPoints: 0,
                 quizScores: { 0: 0, 1: 0, 2: 0},
-                cumulativeQuizScore: 0
-                
+                cumulativeQuizScore: 0,
+                totalUnitProgress: 0,
+                displayProgress: 0,
+                testBonus: 0,
+                labBonus: 0,
+                displayLab: 0,
+                displayTest: 0
             },
             "unit-6": {
-                test: {raw: 0, bonus: 0, display: 0},
-                lab: {raw: 0, bonus: 0, display: 0},
-                progress: {total:0, display: 0},
+                test: 0,
+                lab: 0,
                 inClassPoints: 0,
                 inClassAssignments:{},
                 quizPoints: 0,
                 quizScores: { 0: 0, 1: 0},
-                cumulativeQuizScore: 0
-                
+                cumulativeQuizScore: 0,
+                totalUnitProgress: 0,
+                displayProgress: 0,
+                testBonus: 0,
+                labBonus: 0,
+                displayLab: 0,
+                displayTest: 0 
             } 
         },
         quizSessions: []
     }
 };
+
+// Calculate running balance aggregates safely across tracked blocks
+function calculatePointsTotals() {
+    let globalRunningTotal = 0;
+    
+    Object.keys(studentData.units).forEach(uId => {
+        const studentUnit = studentData.units[uId];
+        
+        // Sum up standard capped topic quiz allocations
+        let calculatedQuizSum = 0;
+        Object.keys(studentUnit.quizScores).forEach(qIdx => {
+            calculatedQuizSum += studentUnit.quizScores[qIdx];
+        });
+        
+        studentUnit.pointsFromQuizzes = calculatedQuizSum;
+        studentUnit.totalUnitPoints = studentUnit.inClassPoints + studentUnit.pointsFromQuizzes;
+        globalRunningTotal += studentUnit.totalUnitPoints;
+    });
+
+    studentData.overallPoints = globalRunningTotal;
+    studentData.overallGoal = Object.keys(masterUnitContent).length * POINT_GOAL_PER_UNIT;
+}
+
+// Initial calculation call on boot
+calculatePointsTotals();
+
+// =========================================================================
+// 3. EXPRESS ROUTE CONTROLLER CONTROLS
+// =========================================================================
+
+// Root Classroom Student Path
+app.get('/', (req, res) => {
+    res.render('dashboard', { student: studentData, masterContent: masterUnitContent });
+});
+
+// Unit Landing View
+app.get('/unit/:unitId', (req, res) => {
+    const masterUnit = masterUnitContent[req.params.unitId];
+    const studentUnit = studentData.units[req.params.unitId];
+    
+    if (!masterUnit) return res.status(404).send("Unit blueprints missing.");
+    
+    res.render('unit', { 
+        unitId: req.params.unitId,
+        unit: masterUnit, 
+        studentUnit: studentUnit,
+        goal: POINT_GOAL_PER_UNIT
+    });
+});
+
+// Quiz Execution Pipeline
+app.get('/quiz/:unitId/:quizIndex', (req, res) => {
+    const masterUnit = masterUnitContent[req.params.unitId];
+    const targetIdx = parseInt(req.params.quizIndex);
+    
+    if (!masterUnit) return res.status(404).send("Unit template not found.");
+
+    let sourceQuestions = [];
+    let titleName = "";
+
+    if (targetIdx === masterUnit.quizzes.length) {
+        titleName = `${masterUnit.title} Cumulative Review`;
+        masterUnit.quizzes.forEach(quiz => {
+            sourceQuestions = sourceQuestions.concat(quiz.spreadsheetQuestions);
+        });
+        sourceQuestions.sort(() => Math.random() - 0.5);
+    } else {
+        const targetQuiz = masterUnit.quizzes[targetIdx];
+        if (!targetQuiz) return res.status(404).send("Quiz track missing.");
+        titleName = targetQuiz.name;
+        sourceQuestions = targetQuiz.spreadsheetQuestions;
+    }
+
+    const compiledQuestions = sourceQuestions.map((q, idx) => {
+        if (q.type !== 'algorithmic-math') return { ...q, originalIndex: idx };
+
+        let context = {};
+        let instanceText = q.questionText;
+        
+        let varSpecs = q.spreadsheetVariables.split(';');
+        varSpecs.forEach(spec => {
+            let [name, command] = spec.trim().split('=');
+            name = name.trim(); command = command.trim();
+            
+            if (command.startsWith('int')) {
+                let [min, max] = command.replace('int(', '').replace(')', '').split(',').map(Number);
+                context[name] = Math.floor(Math.random() * (max - min + 1)) + min;
+            
+            } else if (command.startsWith('float')) {
+                let [min, max, dec] = command.replace('float(', '').replace(')', '').split(',').map(Number);
+                context[name] = parseFloat((Math.random() * (max - min) + min).toFixed(dec));
+            
+            }else if (command.startsWith('choice')) {
+                let options = command.replace('choice(', '').replace(')', '')
+                                     .split(',')
+                                     .map(str => str.trim().replace(/['"]/g, '')); // Strips out quote marks
+                context[name] = options[Math.floor(Math.random() * options.length)];
+            }
+        });
+
+        if (q.spreadsheetEquations) {
+            let eqSpecs = q.spreadsheetEquations.split(';');
+            eqSpecs.forEach(spec => {
+                let [name, expression] = spec.trim().split('=');
+                name = name.trim(); expression = expression.trim();
+                let fn = new Function(...Object.keys(context), `return ${expression};`);
+                let result = fn(...Object.values(context));
+                context[name] = typeof result === 'number' && !Number.isInteger(result) ? parseFloat(result.toFixed(2)) : result;
+            });
+        }
+
+        for (let key in context) {
+            instanceText = instanceText.replace(new RegExp(`\\[${key}\\]`, 'g'), `<strong>${context[key]}</strong>`);
+        }
+
+        let formulaFn = new Function(...Object.keys(context), `return ${q.spreadsheetFormula};`);
+        let rawAnswer = formulaFn(...Object.values(context));
+        let finalizedAnswer = parseFloat(rawAnswer.toFixed(q.roundingValue));
+
+        return {
+            id: q.id,
+            type: 'algorithmic-math',
+            questionText: instanceText,
+            computedAnswer: finalizedAnswer,
+            unitSymbol: q.unitSymbol,
+            pointValue: q.pointValue,
+            originalIndex: idx,
+            spreadsheetVariables: q.spreadsheetVariables,
+            spreadsheetEquations: q.spreadsheetEquations,
+            spreadsheetFormula: q.spreadsheetFormula,
+            roundingValue: q.roundingValue
+        };
+    });
+
+    res.render('quiz', {
+        unitId: req.params.unitId,
+        quizIndex: req.params.quizIndex,
+        quizName: titleName,
+        compiledQuestions: compiledQuestions
+    });
+});
+
+// NEW & SECURE: Point Allocation & Audit Logging Controller 
+app.post('/quiz/:unitId/:quizIndex/save-points', (req, res) => {
+    const studentUnit = studentData.units[req.params.unitId];
+    const incomingPoints = parseInt(req.body.pointsEarnedThisSession) || 0;
+    const targetIdx = parseInt(req.params.quizIndex);
+    
+    // Read secure telemetry variables tracking payload sent from client session
+    const startTime = req.body.startTime; 
+    const endTime = req.body.endTime;
+    const attemptedIds = req.body.attemptedQuestionIds || [];
+    
+    let durationSeconds = 0;
+    if (startTime && endTime) {
+        durationSeconds = Math.round((new Date(endTime) - new Date(startTime)) / 1000);
+    }
+
+    const quizCount = Object.keys(studentUnit.quizScores).length;
+
+    // Apply points to grade buckets
+    if (targetIdx === quizCount) {
+        studentUnit.inClassPoints += incomingPoints; 
+    } else {
+        const currentPoints = studentUnit.quizScores[targetIdx] || 0;
+        const potentialNewPoints = currentPoints + incomingPoints;
+
+        if (currentPoints >= TOPIC_POINT_CAP) {
+            studentUnit.quizScores[targetIdx] = TOPIC_POINT_CAP;
+        } else if (potentialNewPoints > TOPIC_POINT_CAP) {
+            studentUnit.quizScores[targetIdx] = TOPIC_POINT_CAP;
+        } else {
+            studentUnit.quizScores[targetIdx] = potentialNewPoints;
+        }
+    }
+
+    // AUDIT LOG GENERATION: Push telemetry details to profile timeline history
+    studentData.quizSessions.push({
+        sessionUuid: `sess-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        unitId: req.params.unitId,
+        quizIndex: targetIdx,
+        pointsEarned: incomingPoints,
+        quizStartedAt: startTime,
+        quizFinishedAt: endTime,
+        timeElapsedSeconds: durationSeconds,
+        questionsAttemptedList: attemptedIds,
+        flaggedSuspicious: durationSeconds < 10 && incomingPoints > 40 // Example flag condition
+    });
+
+    calculatePointsTotals();
+    
+    // Log to server console so the teacher can see it in terminal instantly
+    console.log("📊 NEW ATTEMPT COMPLETED:\n", studentData.quizSessions[studentData.quizSessions.length - 1]);
+
+    res.json({ success: true, redirectUrl: `/unit/${req.params.unitId}` });
+});
+
+// Post Point Allocation Route Enforcing 500 Caps
+app.post('/quiz/:unitId/:quizIndex/save-points', (req, res) => {
+    const studentUnit = studentData.units[req.params.unitId];
+    const incomingPoints = parseInt(req.body.pointsEarnedThisSession) || 0;
+    const targetIdx = parseInt(req.params.quizIndex);
+
+    const quizCount = Object.keys(studentUnit.quizScores).length;
+
+    if (targetIdx === quizCount) {
+        // Cumulative review has no point cap; bypass constraints and add directly
+        studentUnit.inClassPoints += incomingPoints; 
+    } else {
+        // Standard Topic Track Cap Enforcer
+        const currentPoints = studentUnit.quizScores[targetIdx] || 0;
+        const potentialNewPoints = currentPoints + incomingPoints;
+
+        if (currentPoints >= TOPIC_POINT_CAP) {
+            studentUnit.quizScores[targetIdx] = TOPIC_POINT_CAP;
+        } else if (potentialNewPoints > TOPIC_POINT_CAP) {
+            studentUnit.quizScores[targetIdx] = TOPIC_POINT_CAP;
+        } else {
+            studentUnit.quizScores[targetIdx] = potentialNewPoints;
+        }
+    }
+
+    calculatePointsTotals();
+    res.json({ success: true, redirectUrl: `/unit/${req.params.unitId}` });
+});
+
+app.listen(3000, () => console.log('Relational Classroom Engine listening on port 3000!'));
