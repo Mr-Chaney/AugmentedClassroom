@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans min-h-screen">
+    <!--=========================================================================
+    Debugger
+    ========================================================================= --> 
+    <div class="bg-yellow-50 border border-yellow-200 p-4 m-4 rounded-lg">
+        <h3 class="text-sm font-bold text-yellow-800 mb-2">Debug: Raw Data</h3>
+        <pre class="bg-gray-800 text-green-400 p-4 rounded text-xs overflow-x-auto"><%= JSON.stringify(userInfo.quizPoints, null, 2) %></pre>
+    </div>
+
+    <!--=========================================================================
+    Header
+    ========================================================================= -->
+    <header class="bg-white border-b border-gray-200 py-6 px-8">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900">
+                <%= unitContent.title %>
+            </h1>
+            <a href="/" class="text-sm font-medium text-blue-600 hover:text-blue-500">
+                &larr; Back to Dashboard
+            </a>
+        </div>
+    </header>
+
+
+    <!--=========================================================================
+    Two-Column Layout Grid
+    ========================================================================= -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!--=========================================================================
+            Left Column: Topic Quizzes 
+            ========================================================================= -->
+            <section class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                
+                <div class="flex-1 space-y-2">
+                    <div class="flex justify-between items-baseline text-xl font-bold text-gray-800 border-b border-gray-100 pb-4 mb-4">
+                        <span class= "font-bold">Topic Quizzes</span>
+                        <span class= "font-bold"> <%= userInfo.quizPoints %> total pts</span>
+                    </div>
+                </div>
+                
+                <!--=========================================================================
+                Single Topic Quizes 
+                ========================================================================= -->
+                <div class="space-y-4">
+                    <% if (unitContent && unitContent.quizzes && unitContent.quizzes.length > 0) { %>
+                        <% unitContent.quizzes.forEach(quiz => { %>
+                            <div class="p-4 border border-black rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                
+                                
+                                <div class="p-2  flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                                    
+                                    <% 
+                                        // 1. Safely extract the current score or default to 0
+                                        const currentScore = (userInfo && userInfo["quizScores"] && userInfo["quizScores"][quiz.quizId] !== undefined) 
+                                                            ? userInfo["quizScores"][quiz.quizId] 
+                                                            : 0;
+
+                                        // 2. Safely grab max points configuration or default to 500
+                                        const maxPoints = (classroomPointSetup && classroomPointSetup.pointValues && classroomPointSetup.pointValues.maxQuizPoints) 
+                                                        ? classroomPointSetup.pointValues.maxQuizPoints 
+                                                        : 0;
+
+                                        // 3. Compute percentage and clip between 0 and 100 to keep the bar within bounds
+                                        const progressPercent = Math.min(Math.max((currentScore / maxPoints) * 100, 0), 100);
+                                    %>
+                                    <!-- Quiz Title and Progress Track -->
+                                    <div class="flex-1 space-y-2">
+                                        <div class="flex justify-between items-baseline">
+                                            <h3 class="font-semibold text-gray-800 text-base">
+                                                <%= quiz.name %>
+                                            </h3>
+                                            <!-- Score Indicator: Green Earned / Gray Maximum -->
+                                            <span class="text-sm font-medium">
+                                                <span style = "color: #009E73;" class= "font-bold"><%= currentScore %></span>
+                                                <span class="text-gray-400"> / <%= maxPoints %> pts</span>
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Progress Bar Track (Gray Background, Green Fill) -->
+                                        <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                            <div class="h-2.5 rounded-full transition-all duration-300" style="background-color: #009E73; width: <%= progressPercent %>%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Quiz Button -->
+                                    <div class="flex sm:justify-end items-center">
+                                        <a href="/quiz/<%= quiz.quizId %>" 
+                                        class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full sm:w-auto transition-colors">
+                                            Take Quiz
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                        <% }); %>
+
+                    <% } else { %>
+                        <p class="text-gray-500 text-sm italic py-4">No quizzes found for this unit structure.</p>
+                    <% } %>
+                </div>
+                
+                <!--=========================================================================
+                Unit Review
+                ========================================================================= -->
+                <div class="mt-6 p-4 border border-black rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+
+                    <div class="p-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                        <!-- Quiz Title and Progress Track -->
+                        <div class="flex-1 space-y-2">
+                            <div class="flex justify-between items-baseline">
+                                <h3 class="font-bold text-base">
+                                    <%= unitContent.title %> Review
+                                </h3>
+                                <!-- Score Indicator: Green Earned / Gray Maximum -->
+                                <span class="text-sm font-medium">
+                                    <span style="color: #009E73;" class="font-bold"> (Unlimited Points) </span>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Quiz Button -->
+                        <div class="flex sm:justify-end items-center">
+                            <a href="/quiz/<%= unitId %>-review" 
+                            class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full sm:w-auto transition-colors">
+                                Take Quiz
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+
+            </section>
+
+            <!--=========================================================================
+            Right Column: In Class Points
+            ========================================================================= -->
+            <section class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div class="flex-1 space-y-2">
+                    <div class="flex justify-between items-baseline text-xl font-bold text-gray-800 border-b border-gray-100 pb-4 mb-4">
+                        <span class= "font-bold">In Class Points</span>
+                        <span class= "font-bold"> <%= userInfo.inClassPoints %> total pts</span>
+                    </div>
+                </div>
+                
+                <div class="overflow-hidden border border-gray-200 rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Assignment
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Score
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <% if (userInfo && userInfo.inClassAssignments && Object.keys(userInfo.inClassAssignments).length > 0) { %>
+                                <% Object.entries(userInfo.inClassAssignments).forEach(([assignmentName, score]) => { %>
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                                            <%= assignmentName %>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-blue-600">
+                                            <%= score %> pts
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="2" class="px-6 py-8 text-center text-sm text-gray-500 italic">
+                                        No in-class points recorded for this unit.
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+</body>
+</html>
