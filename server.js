@@ -17,6 +17,17 @@ app.listen(3000, () => {
     console.log('Server running on port ${Port}');
 });
 
+app.get('/unit/:unitId', (req, res) => {
+    const unitId = req.params.unitId;
+
+    // Example map of properties your route needs to inject:
+    res.render('unit', {
+        unitId: unitId,
+        unitContent: masterUnitContent[unitId],       // Contains .[unitName].quizzes
+        userInfo: students['John.Doe6974@GCPSK12.org'].units[unitId],               // Contains .user.[unitName].quizScores & .inClassAssignments
+        classroomPointSetup: classroomPointSetup    // Contains .pointValues.maxQuizPoints
+    });
+});
 
 // =========================================================================
 // 1. Setup
@@ -49,6 +60,7 @@ const masterUnitContent = {
         quizzes: [
             {
                 name: "1.1 History of Atomic Models",
+                quizId: "1.1",
                 questions: [
                     {
                         id: "1.1-1",
@@ -62,6 +74,7 @@ const masterUnitContent = {
             },
             {
                 name: "1.2 Subatomic Particles",
+                quizId: "1.2",
                 questions: [
                     {
                         id: "1.2-1",
@@ -83,6 +96,7 @@ const masterUnitContent = {
             },
             {
                 name: "1.3 Isotopes",
+                quizId: "1.3",
                 questions: [
                     {
                         id: "1.3-1",
@@ -96,6 +110,7 @@ const masterUnitContent = {
             },
             {
                 name: "1.4 Relative Abundance and Average Atomic Mass",
+                quizId: "1.1",
                 questions: [
                     {
                         id: "1.4-1",
@@ -113,6 +128,7 @@ const masterUnitContent = {
             },
             {
                 name: "1.5 Creating Bohr Models",
+                quizId: "1.5",
                 questions: [
                     {
                         id: "1.5-1",
@@ -126,6 +142,7 @@ const masterUnitContent = {
             },
             {
                 name: "1.6 Electron Configuration",
+                quizId: "1.6",
                 questions: [
                     {
                         id: "1.6-1",
@@ -139,6 +156,7 @@ const masterUnitContent = {
             },
             {
                 name: "1.7 Electron Excitation",
+                quizId: "1.7",
                 questions: [
                     {
                         id: "1.7-1",
@@ -160,6 +178,7 @@ const masterUnitContent = {
         quizzes: [
             {
                 name: "2.1 Valence Electrons and Reactivity",
+                quizId: "2.1",
                 questions: [
                     {
                         id: "2.1-1",
@@ -173,6 +192,7 @@ const masterUnitContent = {
             },
             {
                 name: "2.2 Periodic Trends",
+                quizId: "2.2",
                 questions: [
                     {
                         id: "2.1-2",
@@ -193,30 +213,35 @@ const masterUnitContent = {
         quizzes:[
             {
                 name: "3.1 How do elements bond?",
+                quizId: "3.1",
                 questions: [
                     
                 ]
             },
             {
                 name: "3.2 Ionic Bonds, Formulas, and Names",
+                quizId: "3.2",
                 questions: [
                     
                 ]
             },
             {
                 name: "3.3 Covalent Bonds, Formulas, and Names",
+                quizId: "3.3",
                 questions: [
                     
                 ]
             },
             {
                 name: "3.4 Identifying Bond Type with Electronegativity",
+                quizId: "3.4",
                 questions: [
                     
                 ]
             },
             {
                 name: "3.5 Compound Properties and Designed Materials",
+                quizId: "3.5",
                 questions: [
                     
                 ]
@@ -228,30 +253,35 @@ const masterUnitContent = {
         quizzes:[
             {
                 name: "4.1 Chemical and Physical Properties",
+                quizId: "4.1",
                 questions: [
                     
                 ]
             },
             {
                 name: "4.2 Measuring Density: Mass and Volume",
+                quizId: "4.2",
                 questions: [
                     
                 ]
             },
             {
                 name: "4.3 Calculating Density",
+                quizId: "4.3",
                 questions: [
                     
                 ]
             },
             {
                 name: "4.4 Density Applications",
+                quizId: "4.4",
                 questions: [
                     
                 ]
             },
             {
                 name: "4.5 Intermolecular Forces and Intramolecular Forces",
+                quizId: "4.5",
                 questions: [
                     
                 ]
@@ -263,18 +293,21 @@ const masterUnitContent = {
         quizzes:[
             {
                 name: "5.1 Indicators of a chemical reaction",
+                quizId: "5.1",
                 questions: [
                     
                 ]
             },
             {
                 name: "5.2 Law of Conservation of Matter",
+                quizId: "5.2",
                 questions: [
                     
                 ]
             },
             {
                 name: "5.3 Types of Reactions",
+                quizId: "5.3",
                 questions: [
                     
                 ]
@@ -286,12 +319,14 @@ const masterUnitContent = {
         quizzes:[
             {
                 name: "6.1 Predicting Products",
+                quizId: "6.1",
                 questions: [
                     
                 ]
             },
             {
                 name: "6.2 Balancing Equations",
+                quizId: "6.2",
                 questions: [
                     
                 ]
@@ -322,7 +357,7 @@ const students = {
                 inClassPoints: 2700,
                 inClassAssignments:{"Unit 1 Packet": 700, "Unit 1 Quiz": 1000, "Unit 1 Review": 1000},
                 quizPoints: 1020,
-                quizScores: { 0: 250, 1: 250, 2: 500, 3: 20, 4: 0, 5: 0, 6: 0 },
+                quizScores: { "1.1": 250, "1.2": 250, "1.3": 500, "1.4": 20, "1.5": 0, "1.6": 0, "1.7": 0 },
                 cumulativeQuizScore: 0
                 
             },  
@@ -333,7 +368,7 @@ const students = {
                 inClassPoints: 7000,
                 inClassAssignments:{"2.1 Paper": 7000},
                 quizPoints: 0,
-                quizScores: { 0: 0, 1: 0},
+                quizScores: { "2.1": 0, "2.2": 0},
                 cumulativeQuizScore: 0
             },
             "unit-3": {
@@ -343,7 +378,7 @@ const students = {
                 inClassPoints: 0,
                 inClassAssignments:{},
                 quizPoints: 0,
-                quizScores: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0},
+                quizScores: { "3.1": 0, "3.2": 0, "3.3": 0, "3.4": 0, "3.5": 0},
                 cumulativeQuizScore: 0
             },
             "unit-4": {
@@ -353,7 +388,7 @@ const students = {
                 inClassPoints: 0,
                 inClassAssignments:{},
                 quizPoints: 0,
-                quizScores: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0},
+                quizScores: { "4.1": 0, "4.2": 0, "4.3": 0, "4.4": 0, "4.5": 0},
                 cumulativeQuizScore: 0
             },
             "unit-5": {
@@ -363,7 +398,7 @@ const students = {
                 inClassPoints: 0,
                 inClassAssignments:{},
                 quizPoints: 0,
-                quizScores: { 0: 0, 1: 0, 2: 0},
+                quizScores: { "5.1": 0, "5.2": 0, "5.3": 0},
                 cumulativeQuizScore: 0
                 
             },
@@ -374,7 +409,7 @@ const students = {
                 inClassPoints: 0,
                 inClassAssignments:{},
                 quizPoints: 0,
-                quizScores: { 0: 0, 1: 0},
+                quizScores: { "6.1": 0, "6.2": 0},
                 cumulativeQuizScore: 0
                 
             } 
